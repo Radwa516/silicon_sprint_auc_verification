@@ -143,8 +143,34 @@ async def test_AES(dut):
     # Use uvm_root to run the test properly (executes all phases in hierarchy)
     await uvm_root().run_test("AES_Test")
 ```
+### Configration Data Base
+The interface is sent throught it. In UVM, the top module is the only module that sees the interface, so the interface can be shared to the driver and the monitor to drive or observe the signals. But in cocotb and pyuvm, The interface ca be accessed by using **cocotb.top.<signal_name>**. However in the tutorial, configDB is used to simulate the SystemVerilog environment. In addtition, To limit the classed that can access the interface as in UVM.
+```ruby
+# Sending the interface
+self.dut = cocotb.top
+ConfigDB().set(None, "*", "dut", self.dut)
+```
+```ruby
+try:
+   self.vif = ConfigDB().get(self, "", "dut")
+   self.logger.info("Got the interface successfully")
+except Exception:
+   self.logger.error("Can't get the interface from ConfigDB")
+```
 ## Running the code
-You will find the code of the environment in: **uvm_evv/uvm_env.py**
+You will find the code of the environment in: **uvm_env/uvm_env.py**
+This is an environment setup. Run it to make sure that the environment is running fine. 
+After running, you should see:
+```
+19.00ns INFO     cocotb.regression                  uvm_env.test_AES passed                                                                                             
+19.00ns INFO     cocotb.regression                  
+**************************************************************************************                                                                                  
+** TEST                          STATUS  SIM TIME (ns)  REAL TIME (s)  RATIO (ns/s) **                                                                                  **************************************************************************************                                                                                  
+** uvm_env.test_AES               PASS          19.00           0.01       1580.84  **                                                                                  **************************************************************************************                                                                                  
+** TESTS=1 PASS=1 FAIL=0 SKIP=0                 19.00           0.01       1334.51  **                                                                                  **************************************************************************************                                                                                                                                                                         
+```
+### 1) Driving the inputs
+
 
 
 

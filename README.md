@@ -434,6 +434,8 @@ Then the sequence is using those random values and sending it to the driver. For
 > The whole code of sequence in path: Random_Test/uvm_env_rt.py <br/>
 **scoreboard** <br/>
 It will be slightly complex because it recieves inputs to send them to the golden model, then waiting for the result and comparing the actual result with the one from the golden model.<br/>
+
+
 > [!NOTE]
 > The whole code of sequence in path: Random_Test/uvm_env_rt.py
 ### coverage

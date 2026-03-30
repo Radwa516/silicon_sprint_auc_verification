@@ -75,6 +75,52 @@ Using them together gives you the best of both:
 ## UVM Environment 
 A UVM environment is a modular verification structure used to verify RTL designs in a scalable and reusable way. It organizes the testbench into components that generate stimulus, drive the DUT, monitor behavior, and check correctness. <br/>
 ![UVM Environment](https://asicwhale.github.io/2018/07/09/201807-2018-07-09-uvm-env/uvm_example.png)
+### Achynchronous Reset
+In AES design, the Reset signal is active low asyncronous reset, which means we can't depend on the clock. Therfore we will use Timer (Function in python to advance the simulation time). First asserting the reset and wait for a specfic time, then deassert the reset and wait for reset signal to propagate through DUT logic.
+```ruby
+async def async_reset(dut, duration_ns=100, propagation_delay_ns=10):
+    """ Asynchronous reset sequence. """
+    print("Asserting async reset...")
+    
+    dut.reset_n.value = 0
+    await Timer(duration_ns, units="ns")
+    
+    print("Deasserting async reset...")
+    dut.reset_n.value = 1
+    # This ensures all flip-flops have stabilized before continuing
+    await Timer(propagation_delay_ns, units="ns")
+    print("Reset complete")
+```
+### Generating Clock Signal
+To generate a clock in cocotb. Use Clock function in clock library, then use start_soon() to make it run parallel with the test (run in the background).
+```ruby
+# generating the clock
+    clk_period = 2
+    clock = Clock(dut.clk, clk_period, unit="ns")
+    cocotb.start_soon(clock.start())
+```
+### @cocotb.test
+It is a decorator in cocotb. Here the clock is generate and run_test() function is called to start the uvm.
+```ruby
+# Cocotb test function to run the pyuvm test
+@cocotb.test()
+async def test_AES(dut):
+    """Cocotb test wrapper for AES_Test."""
+    # generating the clock
+    clk_period = 2
+    clock = Clock(dut.clk, clk_period, unit="ns")
+    cocotb.start_soon(clock.start())
+    await async_reset(dut, 5, 3)
+    # await FallingEdge(dut.clk)
+
+    # Register the test class with uvm_root so run_test can find it
+    if not hasattr(uvm_root(), 'm_uvm_test_classes'):
+        uvm_root().m_uvm_test_classes = {}
+    uvm_root().m_uvm_test_classes["AES_Test"] = AES_Test
+
+    # Use uvm_root to run the test properly (executes all phases in hierarchy)
+    await uvm_root().run_test("AES_Test")
+```
 ### 1. uvm_test
 It is the top-level component that configures the environment and starts the verification scenario, acting as the entry point of the simulation. 
 ```ruby

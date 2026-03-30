@@ -157,6 +157,23 @@ try:
 except Exception:
    self.logger.error("Can't get the interface from ConfigDB")
 ```
+### Golden Model
+It is important to compare the design with it. In library Crypto in python, there is an AES that can be used as a golden model. It takes the key and the text in ASKII format then return the result. After getting the result separate into four words because the output read_data is only 32 bits.
+```ruby
+def golden_model(self, key, plaintext):
+        expected_result = []
+        cipher = AES.new(key, AES.MODE_ECB)
+        ciphertext = cipher.encrypt(plaintext)
+        self.count += 1
+
+        w0 = int.from_bytes(ciphertext[0:4], byteorder='big')
+        w1 = int.from_bytes(ciphertext[4:8], byteorder='big')
+        w2 = int.from_bytes(ciphertext[8:12], byteorder='big')
+        w3 = int.from_bytes(ciphertext[12:16], byteorder='big')
+
+        expected_result = [w0, w1, w2, w3]
+        return expected_result
+```
 ## Running the code
 You will find the code of the environment in: **uvm_env/uvm_env.py**
 This is an environment setup. Run it to make sure that the environment is running fine. 
@@ -272,7 +289,153 @@ class AES_Sequence(uvm_sequence):
             await self.start_item(txn)
             await self.finish_item(txn)
 ```
+**scoreboard**
+It receives output when address = 0x30 - 0x33, and comparing it with the golden model
+```ruby
+def write(self, txn):
+   """Receive transactions from monitor."""
+   self.logger.info(f"Scoreboard received: {txn}")
+   key = bytes.fromhex("2b7e151628aed2a6abf7158809cf4f3c")
+   plaintext = bytes.fromhex("6bc1bee22e409f96e93d7e117393172a")
+   match txn.address:
+      case 0x30:
+         self.actual.append(txn.read_data)
+         self.expected_result = self.golden_model(key, plaintext)     
+         self.logger.info(f"expected_result = 0x{self.expected_result}")
+         word = 0
+         self.check(word)
+      case 0x31:
+         self.actual.append(txn.read_data)
+         word = 1
+         self.check(word)
+      case 0x32:
+         self.actual.append(txn.read_data)
+         word = 2
+         self.check(word)
+      case 0x33:
+         self.actual.append(txn.read_data)
+         word = 3
+         self.check(word)
+```
+> [!NOTE]
+> The whole code of sequence in path: Directed_Test/uvm_env_dt.py
+## Running the directed test code
+```ruby
+====================================================================================================                                                                       
+265.00ns INFO     ../AES_ENV/uvm_env/uvm_env.py(122) [uvm_test_top.env.agent.driver]: From Driver --> txn: cs=0x1, we=0x0, address=48, write_data=2                     
+267.00ns INFO     ../AES_ENV/uvm_env/uvm_env.py(171) [uvm_test_top.env.scoreboard]: Scoreboard received: cs=0x1, we=0x0, address=00110000                                                                                                                                                         
+267.00ns INFO     ../AES_ENV/uvm_env/uvm_env.py(178) [uvm_test_top.env.scoreboard]: expected_result = 0x[987200436, 226113120, 2828978931, 610725783]                   
+267.00ns INFO     ../AES_ENV/uvm_env/uvm_env.py(215) [uvm_test_top.env.scoreboard]: Match: ciphertext = 0x3AD77BB4, actual data = 0x3AD77BB4                                           
+267.00ns INFO     ../AES_ENV/uvm_env/uvm_env.py(150) [uvm_test_top.env.agent.monitor]: From Monitor --> txn: cs=0x1, we=0x0, address=00110000
+====================================================================================================                                                                       
+267.00ns INFO     ../AES_ENV/uvm_env/uvm_env.py(122) [uvm_test_top.env.agent.driver]: From Driver --> txn: cs=0x1, we=0x0, address=49, write_data=2                     
+269.00ns INFO     ../AES_ENV/uvm_env/uvm_env.py(171) [uvm_test_top.env.scoreboard]: Scoreboard received: cs=0x1, we=0x0, address=00110001                                                                                                                                                          
+269.00ns INFO     ../AES_ENV/uvm_env/uvm_env.py(215) [uvm_test_top.env.scoreboard]: Match: ciphertext = 0x D7A3660, actual data = 0x D7A3660                    
+269.00ns INFO     ../AES_ENV/uvm_env/uvm_env.py(150) [uvm_test_top.env.agent.monitor]: From Monitor --> txn: cs=0x1, we=0x0, address=00110001                                             ====================================================================================================                                                                       
+269.00ns INFO     ../AES_ENV/uvm_env/uvm_env.py(122) [uvm_test_top.env.agent.driver]: From Driver --> txn: cs=0x1, we=0x0, address=50, write_data=2                     
+271.00ns INFO     ../AES_ENV/uvm_env/uvm_env.py(171) [uvm_test_top.env.scoreboard]: Scoreboard received: cs=0x1, we=0x0, address=00110010,                                                                                                                                                        
+271.00ns INFO     ../AES_ENV/uvm_env/uvm_env.py(215) [uvm_test_top.env.scoreboard]: Match: ciphertext = 0xA89ECAF3, actual data = 0xA89ECAF3      
+271.00ns INFO     ../AES_ENV/uvm_env/uvm_env.py(150) [uvm_test_top.env.agent.monitor]: From Monitor --> txn: cs=0x1, we=0x0, address=00110010
+====================================================================================================                                                                       
+271.00ns INFO     ../AES_ENV/uvm_env/uvm_env.py(122) [uvm_test_top.env.agent.driver]: From Driver --> txn: cs=0x1, we=0x0, address=51, write_data=2                     
+273.00ns INFO     ../AES_ENV/uvm_env/uvm_env.py(171) [uvm_test_top.env.scoreboard]: Scoreboard received: cs=0x1, we=0x0, address=00110011                                                                                                                                                         
+273.00ns INFO     ../AES_ENV/uvm_env/uvm_env.py(215) [uvm_test_top.env.scoreboard]: Match: ciphertext = 0x2466EF97, actual data = 0x2466EF97    
+273.00ns INFO     ../AES_ENV/uvm_env/uvm_env.py(150) [uvm_test_top.env.agent.monitor]: From Monitor --> txn: cs=0x1, we=0x0, address=00110011                                             ====================================================================================================                                                                                      
+273.00ns INFO     ../AES_ENV/uvm_env/uvm_env.py(307) [uvm_test_top]: Checking AES_Test results                                                                          
+273.00ns INFO     ../AES_ENV/uvm_env/uvm_env.py(221) [uvm_test_top.env.scoreboard]: ============================================================                        
+273.00ns INFO     ../AES_ENV/uvm_env/uvm_env.py(222) [uvm_test_top.env.scoreboard]: Scoreboard Check                                                                    
+273.00ns INFO     ../AES_ENV/uvm_env/uvm_env.py(223) [uvm_test_top.env.scoreboard]: Total transactions: 1                                                               
+273.00ns INFO     ../AES_ENV/uvm_env/uvm_env.py(224) [uvm_test_top.env.scoreboard]: Number of Mismatches: 0                                                             
+273.00ns INFO     ../AES_ENV/uvm_env/uvm_env.py(225) [uvm_test_top.env.scoreboard]: Number of Matches: 4                                                                
+273.00ns INFO     ../AES_ENV/uvm_env/uvm_env.py(310) [uvm_test_top]: ==================================================                                                 
+273.00ns INFO     ../AES_ENV/uvm_env/uvm_env.py(311) [uvm_test_top]: AES_Test completed                                                                                 
+273.00ns INFO     ../AES_ENV/uvm_env/uvm_env.py(312) [uvm_test_top]: ==================================================                                                 
+273.00ns INFO     cocotb.regression                  uvm_env.test_AES passed                                                                                            
+273.00ns INFO     cocotb.regression                  
+**************************************************************************************                                                                                  
+** TEST                          STATUS  SIM TIME (ns)  REAL TIME (s)  RATIO (ns/s) **
+**************************************************************************************                                                                                  
+** uvm_env.test_AES               PASS         273.00           0.06       4290.87  **
+**************************************************************************************                                                                                  
+** TESTS=1 PASS=1 FAIL=0 SKIP=0                273.00           0.06       4219.65  **
+**************************************************************************************      
+```
+## Random Test
+In this method the inputs is randomized. In AES design, the key and the text will take random values. Address can't be randomized as it is a control signal.
+First build a function to random the key and the text based on a specifc size and a seed.
+```ruby
+class AES_Transaction(uvm_sequence_item):
+    """Transaction for AES_ test."""
+    
+    def __init__(self, name="AES_Transaction"):
+        super().__init__(name)
+        self.cs = 0
+        self.we = 0
+        self.address = 0
+        self.write_data = 0
+        self.key = 0
+        self.text = 0
 
+    def randomize_constrained(self, length_min=0, length_max=0xFF, seed=None):
+        """Randomize with constraints."""
+        if seed is not None:
+            random.seed(seed)
+
+        self.key = random.randint(length_min, length_max)
+        self.text = random.randint(length_min, length_max)
+    
+    def __str__(self):
+        return (f"cs=0x{self.cs}, we=0x{self.we}, "
+                f"address={self.address}, "
+                f"write_data={self.write_data}")
+
+```
+Then the sequence is using those random values and sending it to the driver. For simplifity, sending_key function and sending_text are built. they receive the random 128 bits and separating them into four words, then send them:
+```ruby
+   async def sending_key (self, txn: AES_Transaction):
+        key_words = [
+            (txn.key >> 96) & 0xffffffff,
+            (txn.key >> 64) & 0xffffffff,
+            (txn.key >> 32) & 0xffffffff,
+            txn.key & 0xffffffff, 0x00000000,
+            0x00000000, 0x00000000, 0x00000000
+        ]
+
+        for i in range(len(key_words)):
+            txn.cs = 1
+            txn.we = 1
+            txn.address = 0x10 + i
+            txn.write_data = key_words[i]
+            await self.start_item(txn)
+            await self.finish_item(txn)
+            #(1, 1, 0x11, 0x28aed2a6),
+            #txn = AES_Transaction()
+```
+```ruby
+
+    async def sending_text (self, txn: AES_Transaction):
+        text_words = [
+            (txn.text >> 96) & 0xffffffff,
+            (txn.text >> 64) & 0xffffffff,
+            (txn.text >> 32) & 0xffffffff,
+            txn.text & 0xffffffff,
+        ]
+
+        for i in range(len(text_words)):
+            #txn = AES_Transaction()
+            txn.cs = 1
+            txn.we = 1
+            txn.address = 0x20 + i
+            txn.write_data = text_words[i]
+            await self.start_item(txn)
+            await self.finish_item(txn)
+```
+> [!NOTE]
+> The whole code of sequence in path: Random_Test/uvm_env_rt.py
+**scoreboard**
+It will be slightly complex because it recieves inputs to send them to the golden model, then waiting for the result and comparing the actual result with the one from the golden model.
+> [!NOTE]
+> The whole code of sequence in path: Random_Test/uvm_env_rt.py
 
 
 

@@ -165,11 +165,113 @@ After running, you should see:
 19.00ns INFO     cocotb.regression                  uvm_env.test_AES passed                                                                                             
 19.00ns INFO     cocotb.regression                  
 **************************************************************************************                                                                                  
-** TEST                          STATUS  SIM TIME (ns)  REAL TIME (s)  RATIO (ns/s) **                                                                                  **************************************************************************************                                                                                  
-** uvm_env.test_AES               PASS          19.00           0.01       1580.84  **                                                                                  **************************************************************************************                                                                                  
-** TESTS=1 PASS=1 FAIL=0 SKIP=0                 19.00           0.01       1334.51  **                                                                                  **************************************************************************************                                                                                                                                                                         
+** TEST                          STATUS  SIM TIME (ns)  REAL TIME (s)  RATIO (ns/s) **
+**************************************************************************************                                                                                  
+** uvm_env.test_AES               PASS          19.00           0.01       1580.84  ** 
+**************************************************************************************
+** TESTS=1 PASS=1 FAIL=0 SKIP=0                 19.00           0.01       1334.51  **
+**************************************************************************************                                                                                                                                                                         
 ```
 ### 1) Driving the inputs
+After retrieve the interface from the configration data base, waiting for the transaction, then driving the input signal.
+The output of the AES be ready after about 55 clock cycle. After driving the key and the text, wait for the output to be ready 
+without driving any new test cases. 
+```ruby
+self.vif.cs.value = txn.cs
+self.vif.we.value = txn.we
+self.vif.address.value = txn.address
+self.vif.write_data.value = txn.write_data
+# waiting for the result
+if (txn.address == 0x08) and (txn.we == 0) and (txn.cs == 0):
+   for _ in range(55):
+      await FallingEdge(self.vif.clk) 
+```
+### 2) Monitoring the output
+After retrieve the interface from the configration data base, observe the DUT signals and sent them to the scoreboard to check the output.
+In addition
+```ruby
+txn.we = self.vif.we.value
+txn.address = self.vif.address.value
+txn.write_data = self.vif.write_data.value
+txn.read_data = self.vif.read_data.value
+self.ap.write(txn)
+self.logger.info(f"From Monitor --> txn: {txn}")
+await FallingEdge(self.vif.clk)
+```
+### 3) Sending the Transaction
+There are two methods to send the transaction:
+- Directed Test
+- Random Test
+### Directed Test
+Put the test senarios maiually as the following:
+- First Initialize the inputs
+- Send the key
+- Put the configration
+- Wait
+- Send the text
+- Put the configration (encryption/decryption)
+- Wait
+- Recieve the **result**
+```ruby
+class AES_Sequence(uvm_sequence):
+    """Sequence generating AES_ test vectors."""
+    
+    async def body(self):
+        """Generate test vectors."""
+        # (cs, we, address, write_data)
+        test_vectors = [
+            # Initialize the inputs
+            (0, 0, 0x00, 0x00000000),
+            # Write key
+            (1, 1, 0x10, 0x2b7e1516),
+            (1, 1, 0x11, 0x28aed2a6),
+            (1, 1, 0x12, 0xabf71588),
+            (1, 1, 0x13, 0x09cf4f3c),
+            (1, 1, 0x14, 0x00000000),
+            (1, 1, 0x15, 0x00000000),
+            (1, 1, 0x16, 0x00000000),
+            (1, 1, 0x17, 0x00000000),
+
+            # Determine the length of the key (128-bit)
+            (1, 1, 0x0A, 0x00000000),
+
+            # Load the key (build key schedule)
+            (1, 1, 0x08, 0x00000001),
+
+            # Waiting for the key to be loaded
+            (0, 0, 0x08, 0x00000001),
+
+            # Write the plaintext
+            (1, 1, 0x20, 0x6bc1bee2),
+            (1, 1, 0x21, 0x2e409f96),
+            (1, 1, 0x22, 0xe93d7e11),
+            (1, 1, 0x23, 0x7393172a),
+
+            # Set the operation (encryption)
+            (1, 1, 0x0A, 0x00000001),
+
+            # START encryption
+            (1, 1, 0x08, 0x00000002),
+
+            # Waiting for the result
+            (0, 0, 0x08, 0x00000002),
+
+            # Read the result
+            (1, 0, 0x30, 0x00000002),
+            (1, 0, 0x31, 0x00000002),
+            (1, 0, 0x32, 0x00000002),
+            (1, 0, 0x33, 0x00000002),
+        ]
+        
+        for cs, we, address, write_data in test_vectors:
+            txn = AES_Transaction()
+            txn.cs = cs
+            txn.we = we
+            txn.address = address
+            txn.write_data = write_data
+            await self.start_item(txn)
+            await self.finish_item(txn)
+```
 
 
 

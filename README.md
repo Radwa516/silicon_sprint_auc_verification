@@ -431,11 +431,44 @@ Then the sequence is using those random values and sending it to the driver. For
             await self.finish_item(txn)
 ```
 > [!NOTE]
-> The whole code of sequence in path: Random_Test/uvm_env_rt.py
-**scoreboard**
-It will be slightly complex because it recieves inputs to send them to the golden model, then waiting for the result and comparing the actual result with the one from the golden model.
+> The whole code of sequence in path: Random_Test/uvm_env_rt.py <br/>
+**scoreboard** <br/>
+It will be slightly complex because it recieves inputs to send them to the golden model, then waiting for the result and comparing the actual result with the one from the golden model.<br/>
 > [!NOTE]
 > The whole code of sequence in path: Random_Test/uvm_env_rt.py
+### coverage
+In this class, we count which values each pin in the design took during the test to decide, if we can stop here or increase that test cases. In pyuvm, It is too simple. It collect all the data then count the number of unique values that each pin took. after counting, It devides the number / total possible values for this signal. In real designs, it is hard to achieve 100% coverage, but they tried to reach the highst possible value and make sure that the missing test cases don't affect the design.
+> [!NOTE]
+> The whole code of sequence in path: Random_Test/uvm_env_rt.py
+## Running the random test code
+```ruby                                                                                                                                                  
+13307.00ns INFO     ..e/AES_ENV/uvm_env/Random.py(450) [uvm_test_top]: Checking AES_Test results                                                                        
+13307.00ns INFO     ..e/AES_ENV/uvm_env/Random.py(333) [uvm_test_top.env.scoreboard]: ============================================================                      
+13307.00ns INFO     ..e/AES_ENV/uvm_env/Random.py(334) [uvm_test_top.env.scoreboard]: Scoreboard Check                                                                  
+13307.00ns INFO     ..e/AES_ENV/uvm_env/Random.py(335) [uvm_test_top.env.scoreboard]: Total transactions: 50                                                            
+13307.00ns INFO     ..e/AES_ENV/uvm_env/Random.py(336) [uvm_test_top.env.scoreboard]: Number of Mismatches: 0                                                           
+13307.00ns INFO     ..e/AES_ENV/uvm_env/Random.py(337) [uvm_test_top.env.scoreboard]: Number of Matches: 200                                                            
+13307.00ns INFO     ..e/AES_ENV/uvm_env/Random.py(453) [uvm_test_top]: ============================================================                                     
+13307.00ns INFO     ..e/AES_ENV/uvm_env/Random.py(454) [uvm_test_top]: AES_Test completed                                                                               
+13307.00ns INFO     ..e/AES_ENV/uvm_env/Random.py(455) [uvm_test_top]: ============================================================                                     
+13307.00ns INFO     ..e/AES_ENV/uvm_env/Random.py(374) [uvm_test_top.env.coverage]: ============================================================                        
+13307.00ns INFO     ..e/AES_ENV/uvm_env/Random.py(375) [uvm_test_top.env.coverage]: [coverage] Coverage Report                                                          
+13307.00ns INFO     ..e/AES_ENV/uvm_env/Random.py(376) [uvm_test_top.env.coverage]: ============================================================                        
+13307.00ns INFO     ..e/AES_ENV/uvm_env/Random.py(381) [uvm_test_top.env.coverage]: Address Coverage: 19 unique values                                                  
+13307.00ns INFO     ..e/AES_ENV/uvm_env/Random.py(382) [uvm_test_top.env.coverage]: Write Enable Coverage: 2 unique values                                              
+13307.00ns INFO     ..e/AES_ENV/uvm_env/Random.py(390) [uvm_test_top.env.coverage]: Address Coverage: 7.4%                                                              
+13307.00ns INFO     ..e/AES_ENV/uvm_env/Random.py(391) [uvm_test_top.env.coverage]: Write Enable Coverage: 100.0%                                                       
+13307.00ns INFO     ..e/AES_ENV/uvm_env/Random.py(392) [uvm_test_top.env.coverage]: ============================================================                        
+13307.00ns INFO     cocotb.regression                  Random.test_AES passed                                                                                           
+13307.00ns INFO     cocotb.regression                  
+**************************************************************************************                                                                                  
+** TEST                          STATUS  SIM TIME (ns)  REAL TIME (s)  RATIO (ns/s) **
+**************************************************************************************                                                                                  
+** Random.test_AES                PASS       13307.00           6.26       2125.08  **
+**************************************************************************************                                                                                  
+** TESTS=1 PASS=1 FAIL=0 SKIP=0              13307.00           6.26       2124.38  **
+**************************************************************************************
+```
 
 
 

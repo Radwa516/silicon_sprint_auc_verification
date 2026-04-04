@@ -1,21 +1,31 @@
-# AUC Silicon Sprint
+<p align="center">
+  <img src="https://github.com/Radwa516/silicon_sprint_auc_verification/blob/main/silicon_sprint_logo/ASIC-Hub.png" width="150">
+</p>
 
-# Verification for AES design using Verilator, cocotb and pyuvm
-This project focuses on building a reusable UVM-inspired testbench with constrained-random testing, and automated checking.
+<h1 align="center">Silicon Sprint AUC Module (3) </h1>
+</p>
+
+# Verification for AES Design using Verilator, Cocotb, and PyUVM
+
+This project focuses on building a reusable UVM-inspired testbench with constrained-random testing and automated checking.
+
 ## Installation:
-1. **install crypto library**: <br/>
-We will use it as our golden model to check the functionality of the AES design.
-```ruby
+
+1. **Install crypto library**: <br/>
+It will be used as a golden model to verify the functionality of the AES design.
+
+```bash
+   sudo apt update
    pip install pycryptodome
 ```
-  Using the virtual environment:
-```ruby
+Using a virtual environment:
+```bash
    python3 -m venv .venv
    source .venv/bin/activate
 ```
 2. **install the tools**: <br/>
 Then run the script inside Installation file:
-```ruby
+```bash
    ./Installation/install_cocotb.sh
    ./Installation/install_pyuvm.sh
    ./Installation/install_verilator.sh

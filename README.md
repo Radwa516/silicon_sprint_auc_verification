@@ -10,25 +10,28 @@
 This project focuses on building a reusable UVM-inspired testbench with constrained-random testing and automated checking.
 
 ## Installation:
-
-1. **Install crypto library**: <br/>
-It will be used as a golden model to verify the functionality of the AES design.
-
+1. **Clone the repositry:**
 ```bash
-   sudo apt update
-   pip install pycryptodome
+git clone https://github.com/Radwa516/silicon_sprint_auc_verification.git  
 ```
-Using a virtual environment:
-```bash
-   python3 -m venv .venv
-   source .venv/bin/activate
+2. **Using a virtual environment:**
+ ```bash
+python3 -m venv .venv && source .venv/bin/activate
 ```
-2. **install the tools**: <br/>
-Then run the script inside Installation file:
+3. **Install crypto library:** <br/>
+It will be used as a golden model to verify the functionality of the AES design. <br/>
 ```bash
-   ./Installation/install_cocotb.sh
-   ./Installation/install_pyuvm.sh
-   ./Installation/install_verilator.sh
+sudo apt update
+```
+```bash
+pip install pycryptodome
+```
+2. **Install the tools**: <br/>
+Run the scripts inside the Installation folder:
+```bash
+bash ./silicon_sprint_auc_verification/Installation/install_cocotb.sh
+bash ./silicon_sprint_auc_verification/Installation/install_pyuvm.sh
+bash ./silicon_sprint_auc_verification/Installation/install_verilator.sh
 ```
 ## AES Design
 We will use the open-source RTLs for AES by [Joachim Strömbergson](https://github.com/secworks/aes). AES stands for standard Encription Standard. <br/> 

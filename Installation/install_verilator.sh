@@ -18,7 +18,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 TOOLS_DIR="$PROJECT_ROOT/tools"
 VERILATOR_DIR="$TOOLS_DIR/verilator"
-VERILATOR_REPO="git@github.com:verilator/verilator.git"
+VERILATOR_REPO="https://github.com/verilator/verilator.git"
 VERILATOR_INSTALL_PREFIX="/usr/local"  # Default system installation
 LOCAL_INSTALL=false  # If true, install to project-local directory
 

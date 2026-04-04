@@ -1,20 +1,13 @@
 """
-Module 3 Test Case 3.1: Simple UVM Test
-Complete UVM testbench for simple adder.
+Complete UVM testbench for AES design.
 """
 
 import cocotb
 import random
 from cocotb.clock import Clock
-from cocotb.triggers import Timer, RisingEdge, FallingEdge
+from cocotb.triggers import Timer, FallingEdge
 from pyuvm import *
 from Crypto.Cipher import AES
-# In pyuvm, use uvm_seq_item_port vifead of uvm_seq_item_pull_port
-# uvm_seq_item_port is available from pyuvm import * and works the same way
-# Create an alias for compatibility with code that expects uvm_seq_item_pull_port
-
-# Use uvm_seq_item_port as it's the correct class in pyuvm
-uvm_seq_item_pull_port = uvm_seq_item_port
     
 class AES_Transaction(uvm_sequence_item):
     """Transaction for AES test."""
@@ -28,8 +21,7 @@ class AES_Transaction(uvm_sequence_item):
     
     def __str__(self):
         return (f"cs=0x{self.cs}, we=0x{self.we}, "
-                f"address={self.address}, "
-                f"write_data={self.write_data}")
+                f"address={self.address}, ")
 
 
 class AES_Sequence(uvm_sequence):
@@ -112,6 +104,7 @@ class AES_Scoreboard(uvm_subscriber):
         self.text = 0
         self.count = 0
         self.mismatches = 0
+        self.matches = 0
 
     def write(self, txn):
         """Receive transactions from monitor."""
@@ -136,10 +129,11 @@ class AES_Scoreboard(uvm_subscriber):
         if (actual_data != self.expected_result[index]):
             self.logger.error(f"Mismatch: ciphertext = 0x{self.expected_result[index]:8X}, "
                               f"actual data = 0x{actual_data:8X}")
-            self.mismatches =+1
+            self.mismatches += 1
         else:
             self.logger.info(f"Match: ciphertext = 0x{self.expected_result[index]:8X}, "
                              f"actual data = 0x{actual_data:8X}")
+            self.matches += 1
         
     def check_phase(self):
         """Check phase - verify results."""
@@ -147,6 +141,7 @@ class AES_Scoreboard(uvm_subscriber):
         self.logger.info("Scoreboard Check")
         self.logger.info(f"Total transactions: {self.count}")
         self.logger.info(f"Number of Mismatches: {self.mismatches}")
+        self.logger.info(f"Number of Matches: {self.matches}")
 
 class AES_Coverage(uvm_subscriber):
     """Coverage for advanced test."""
@@ -154,11 +149,6 @@ class AES_Coverage(uvm_subscriber):
     def __init__(self, name="AdgerCoverage", parent=None):
         super().__init__(name, parent)
         self.coverage_we = {}
-    
-    def build_phase(self):
-        """Build phase - uvm_subscriber already provides analysis export."""
-        # uvm_subscriber automatically creates analysis_export, no need to create manually
-        pass
     
     def write(self, txn):
         """Sample coverage"""
@@ -251,13 +241,6 @@ async def async_reset(dut, duration_ns=100, propagation_delay_ns=10):
     # This ensures all flip-flops have stabilized before continuing
     await Timer(propagation_delay_ns, units="ns")
     print("Reset complete")
-
-# initialize the inputs
-#async def init_inputs (dut):
-#    print("Initializing the inputs...")
-#    dut.cs.value = 0
-#    dut.we.value = 0
-#    dut.write_data.value = 0
 
 # Cocotb test function to run the pyuvm test
 @cocotb.test()

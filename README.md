@@ -707,17 +707,15 @@ It receives transactions from the monitor and records the unique values of addre
 <summary> coverage class </summary>
   
 ```python
-  class AES_Coverage(uvm_subscriber):
+class AES_Coverage(uvm_subscriber):
     
     def __init__(self, name="AdgerCoverage", parent=None):
         super().__init__(name, parent)
         self.coverage_we = {}
         self.coverage_address = {}
     
-    def build_phase(self):
-        # uvm_subscriber automatically creates analysis_export, no need to create manually
-        pass
-    
+    def write(self, txn):
+        """Sample coverage."""
         address_cvg = int(txn.address)
         address_we = int(txn.we)
         #b_cvg = int(txn.write_data)
@@ -754,12 +752,13 @@ It receives transactions from the monitor and records the unique values of addre
         self.logger.info(f"Address Coverage: {addr_percent:.1f}%")
         self.logger.info(f"Write Enable Coverage: {we_percent:.1f}%")
         self.logger.info("=" * 60)
+
 ```
 
 </details>
         
 > [!NOTE]
-> The whole code of sequence in path: Random_Test/uvm_env_rt.py
+> The complete code of sequence in path: Random_Test/uvm_env_rt.py
 
 ## Running the random test code
 ```ruby                                                                                                                                                  

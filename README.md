@@ -263,9 +263,6 @@ txn.we = self.vif.we.value
 txn.address = self.vif.address.value
 txn.write_data = self.vif.write_data.value
 txn.read_data = self.vif.read_data.value
-self.ap.write(txn)
-self.logger.info(f"From Monitor --> txn: {txn}")
-await FallingEdge(self.vif.clk)
 ```
 </details> 
 

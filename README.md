@@ -511,15 +511,129 @@ Then, the sequence uses these random values and sends them to the driver. For si
 
 </details>
 
-> [!NOTE]
-> The whole code of sequence in path: Random_Test/uvm_env_rt.py <br/>
+The complete sequence code:
+<details>
+<summary> sending_text function </summary>
+  
+```python
+    class AES_Sequence(uvm_sequence):
+    """Sequence generating AES_ test vectors."""
+    
+    async def body(self):
+        """Generate test vectors."""
+
+        for _ in range(50):
+            txn = AES_Transaction()
+            txn.cs = 0
+            txn.we = 0
+            txn.address = 0x00
+            txn.write_data = 0x00000000
+            await self.start_item(txn)
+            await self.finish_item(txn)
+            # Write key
+            seed = random.getrandbits(32)
+            txn.randomize_constrained(0, 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF, seed)
+            await self.sending_key(txn)
+
+            # Set config FIRST (encrypt, 128-bit)
+            txn.cs = 1
+            txn.we = 1
+            txn.address = 0x0A
+            txn.write_data = 0x00000000
+            await self.start_item(txn)
+            await self.finish_item(txn)
+
+            # INIT (build key schedule)
+            txn.cs = 1
+            txn.we = 1
+            txn.address = 0x08
+            txn.write_data = 0x00000001
+            await self.start_item(txn)
+            await self.finish_item(txn)
+
+            txn.cs = 0
+            txn.we = 0
+            txn.address = 0x08
+            txn.write_data = 0x00000001
+            await self.start_item(txn)
+            await self.finish_item(txn)
+
+            # Write plaintext
+            await self.sending_text(txn)
+
+            # Set config FIRST (encrypt, 128-bit)
+            txn.cs = 1
+            txn.we = 1
+            txn.address = 0x0A
+            txn.write_data = 0x00000001
+            await self.start_item(txn)
+            await self.finish_item(txn)
+
+            # START encryption
+            txn.cs = 1
+            txn.we = 1
+            txn.address = 0x08
+            txn.write_data = 0x00000002
+            await self.start_item(txn)
+            await self.finish_item(txn)
+
+            txn.cs = 0
+            txn.we = 0
+            txn.address = 0x08
+            txn.write_data = 0x00000002
+            await self.start_item(txn)
+            await self.finish_item(txn)
+
+            # Read result
+            for i in range(4):
+                txn.cs = 1
+                txn.we = 0
+                txn.address = 0x30 + i
+                await self.start_item(txn)
+                await self.finish_item(txn)
+
+    async def sending_key (self, txn: AES_Transaction):
+
+        key_words = [
+            (txn.key >> 96) & 0xffffffff,
+            (txn.key >> 64) & 0xffffffff,
+            (txn.key >> 32) & 0xffffffff,
+            txn.key & 0xffffffff, 0x00000000,
+            0x00000000, 0x00000000, 0x00000000
+        ]
+
+        for i in range(len(key_words)):
+            txn.cs = 1
+            txn.we = 1
+            txn.address = 0x10 + i
+            txn.write_data = key_words[i]
+            await self.start_item(txn)
+            await self.finish_item(txn)
+        
+
+    async def sending_text (self, txn: AES_Transaction):
+        text_words = [
+            (txn.text >> 96) & 0xffffffff,
+            (txn.text >> 64) & 0xffffffff,
+            (txn.text >> 32) & 0xffffffff,
+            txn.text & 0xffffffff,
+        ]
+
+        for i in range(len(text_words)):
+            txn.cs = 1
+            txn.we = 1
+            txn.address = 0x20 + i
+            txn.write_data = text_words[i]
+            await self.start_item(txn)
+            await self.finish_item(txn)
+```
+</details>
 
 ## scoreboard 
 It will be slightly complex because it recieves inputs to send them to the golden model, then waiting for the result and comparing the actual result with the one from the golden model.<br/>
 
-
 > [!NOTE]
-> The whole code of sequence in path: Random_Test/uvm_env_rt.py
+> The complete code of scoreboarde in path: Random_Test/uvm_env_rt.py
 
 ### coverage
 In this class, the values taken by each signal in the design are tracked during the test to decide whether the current test cases are sufficient or need to be extended. In pyuvm, this process is simplified by collecting all sampled data and counting the number of unique values each signal takes. The coverage is then calculated by dividing the number of unique observed values by the total possible values for that signal. In real designs, achieving 100% coverage is difficult, so the goal is to reach the highest possible coverage while ensuring that any missing cases do not affect the correctness of the design.

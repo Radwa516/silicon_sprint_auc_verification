@@ -490,7 +490,6 @@ Then, the sequence uses these random values and sends them to the driver. For si
 <summary> sending_text function </summary>
   
 ```python
-
     async def sending_text (self, txn: AES_Transaction):
         text_words = [
             (txn.text >> 96) & 0xffffffff,
@@ -513,10 +512,10 @@ Then, the sequence uses these random values and sends them to the driver. For si
 
 The complete sequence code:
 <details>
-<summary> sending_text function </summary>
+<summary> sequence class </summary>
   
 ```python
-    class AES_Sequence(uvm_sequence):
+class AES_Sequence(uvm_sequence):
     """Sequence generating AES_ test vectors."""
     
     async def body(self):
@@ -631,6 +630,70 @@ The complete sequence code:
 
 ## scoreboard 
 It will be slightly complex because it recieves inputs to send them to the golden model, then waiting for the result and comparing the actual result with the one from the golden model.<br/>
+<details>
+<summary> write function </summary>
+  
+```python
+def write(self, txn):
+        """Receive transactions from monitor."""
+        self.logger.info(f"Scoreboard received: {txn}")
+        match txn.address:
+            case 0x10:
+                self.round_key_list.append(int(txn.write_data))
+            case 0x11:
+                self.round_key_list.append(int(txn.write_data))
+            case 0x12:
+                self.round_key_list.append(int(txn.write_data))
+            case 0x13:
+                self.round_key_list.append(int(txn.write_data))
+
+            case 0x20:
+                self.text_list.append(int(txn.write_data))
+            case 0x21:
+                self.text_list.append(int(txn.write_data))
+            case 0x22:
+                self.text_list.append(int(txn.write_data))
+            case 0x23:
+                self.text_list.append(int(txn.write_data))
+
+            case 0x30:
+                self.actual.append(txn.read_data)
+                key = self.round_key.to_bytes(16, 'big')
+                plaintext = self.text.to_bytes(16, 'big')
+                self.expected_result = self.golden_model(key, plaintext)     
+                self.logger.info(f"expected_result = 0x{self.expected_result}")
+                word = 0
+                self.check(word)
+            case 0x31:
+                self.actual.append(txn.read_data)
+                word = 1
+                self.check(word)
+            case 0x32:
+                self.actual.append(txn.read_data)
+                word = 2
+                self.check(word)
+            case 0x33:
+                self.actual.append(txn.read_data)
+                word = 3
+                self.check(word)
+
+            
+        if len(self.round_key_list) == 4:
+            self.round_key = 0
+            for word in self.round_key_list:
+                self.round_key = (self.round_key << 32) | word
+            self.round_key_list = []
+            txn.key = self.round_key
+            
+        if len(self.text_list) == 4:
+            self.text = 0
+            for word in self.text_list:
+                self.text = (self.text << 32) | word
+            self.text_list = []
+            txn.text = self.text
+```
+
+</details>
 
 > [!NOTE]
 > The complete code of scoreboarde in path: Random_Test/uvm_env_rt.py

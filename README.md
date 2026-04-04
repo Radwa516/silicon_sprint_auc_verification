@@ -518,10 +518,70 @@ It will be slightly complex because it recieves inputs to send them to the golde
 
 > [!NOTE]
 > The whole code of sequence in path: Random_Test/uvm_env_rt.py
+
 ### coverage
-In this class, we count which values each pin in the design took during the test to decide, if we can stop here or increase that test cases. In pyuvm, It is too simple. It collect all the data then count the number of unique values that each pin took. after counting, It devides the number / total possible values for this signal. In real designs, it is hard to achieve 100% coverage, but they tried to reach the highst possible value and make sure that the missing test cases don't affect the design.
+In this class, the values taken by each signal in the design are tracked during the test to decide whether the current test cases are sufficient or need to be extended. In pyuvm, this process is simplified by collecting all sampled data and counting the number of unique values each signal takes. The coverage is then calculated by dividing the number of unique observed values by the total possible values for that signal. In real designs, achieving 100% coverage is difficult, so the goal is to reach the highest possible coverage while ensuring that any missing cases do not affect the correctness of the design.
+
+It receives transactions from the monitor and records the unique values of address and write enable (we) in dictionaries while counting how often each value appears. In the write() function, every incoming transaction is sampled and used to update the coverage data. In the report_phase(), it calculates the number of unique values seen and converts them into simple coverage percentages based on the possible value range (8-bit address and 1-bit control signal). Finally, it prints a summary report showing how much of the design space has been exercised, helping evaluate whether the test is sufficient or needs more stimulus.
+
+<details>
+<summary> coverage class </summary>
+  
+```python
+  class AES_Coverage(uvm_subscriber):
+    
+    def __init__(self, name="AdgerCoverage", parent=None):
+        super().__init__(name, parent)
+        self.coverage_we = {}
+        self.coverage_address = {}
+    
+    def build_phase(self):
+        # uvm_subscriber automatically creates analysis_export, no need to create manually
+        pass
+    
+        address_cvg = int(txn.address)
+        address_we = int(txn.we)
+        #b_cvg = int(txn.write_data)
+        if address_cvg not in self.coverage_address:
+            self.coverage_address[address_cvg] = 0
+        self.coverage_address[address_cvg] += 1
+
+        if address_we not in self.coverage_we:
+            self.coverage_we[address_we] = 0
+        self.coverage_we[address_we] += 1
+
+        print("="*150)
+        print(f"Coverage sampled for bin address: {address_cvg}, unique values: {self.coverage_address}")
+        print(f"Coverage sampled for bin write enable: {address_we}, unique values: {len(self.coverage_we)}")
+        print("="*150)
+
+
+    def report_phase(self):
+        self.logger.info("=" * 60)
+        self.logger.info(f"[{self.get_name()}] Coverage Report")
+        self.logger.info("=" * 60)
+        
+        total_addr = len(self.coverage_address)
+        total_we = len(self.coverage_we)
+        self.logger.info(f"Address Coverage: {total_addr} unique values")
+        self.logger.info(f"Write Enable Coverage: {total_we} unique values")
+        
+        #Coverage percentage (simplified)
+        address_possible_values = 2**8  # 8-bit data
+        we_possible_values = 2  # 8-bit command
+        addr_percent = (total_addr / address_possible_values) * 100
+        we_percent = (total_we / we_possible_values) * 100
+        
+        self.logger.info(f"Address Coverage: {addr_percent:.1f}%")
+        self.logger.info(f"Write Enable Coverage: {we_percent:.1f}%")
+        self.logger.info("=" * 60)
+```
+
+</details>
+        
 > [!NOTE]
 > The whole code of sequence in path: Random_Test/uvm_env_rt.py
+
 ## Running the random test code
 ```ruby                                                                                                                                                  
 13307.00ns INFO     ..e/AES_ENV/uvm_env/Random.py(450) [uvm_test_top]: Checking AES_Test results                                                                        

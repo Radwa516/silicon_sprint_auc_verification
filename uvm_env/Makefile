@@ -9,7 +9,7 @@ EXTRA_ARGS += -Wno-fatal -Wno-UNOPTFLAT
 PYTHON_FILES = uvm_env.py 
 
 # Verilog files
-VERILOG_SOURCES := $(wildcard ../rtl/*.v)
+VERILOG_SOURCES := $(wildcard ../../aes/src/rtl/*.v)
 VERILOG_FILES = $(VERILOG_SOURCES)
 
 # Test to run

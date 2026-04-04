@@ -695,9 +695,6 @@ def write(self, txn):
 
 </details>
 
-> [!NOTE]
-> The complete code of scoreboarde in path: Random_Test/uvm_env_rt.py
-
 ### coverage
 In this class, the values taken by each signal in the design are tracked during the test to decide whether the current test cases are sufficient or need to be extended. In pyuvm, this process is simplified by collecting all sampled data and counting the number of unique values each signal takes. The coverage is then calculated by dividing the number of unique observed values by the total possible values for that signal. In real designs, achieving 100% coverage is difficult, so the goal is to reach the highest possible coverage while ensuring that any missing cases do not affect the correctness of the design.
 
@@ -718,7 +715,6 @@ class AES_Coverage(uvm_subscriber):
         """Sample coverage."""
         address_cvg = int(txn.address)
         address_we = int(txn.we)
-        #b_cvg = int(txn.write_data)
         if address_cvg not in self.coverage_address:
             self.coverage_address[address_cvg] = 0
         self.coverage_address[address_cvg] += 1

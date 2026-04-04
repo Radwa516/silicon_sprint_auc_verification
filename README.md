@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://github.com/Radwa516/silicon_sprint_auc_verification/blob/main/silicon_sprint_logo/ASIC-Hub.png" width="150">
+  <img src="https://github.com/Radwa516/silicon_sprint_auc_verification/blob/main/silicon_sprint_logo/ASIC-Hub.png" width="200">
 </p>
 
 <h1 align="center">Silicon Sprint AUC Module (6) </h1>
@@ -26,7 +26,7 @@ sudo apt update
 ```bash
 pip install pycryptodome
 ```
-2. **Install the tools**: <br/>
+4. **Install the tools**: <br/>
 Run the scripts inside the Installation folder:
 ```bash
 bash ./silicon_sprint_auc_verification/Installation/install_cocotb.sh
@@ -34,30 +34,34 @@ bash ./silicon_sprint_auc_verification/Installation/install_pyuvm.sh
 bash ./silicon_sprint_auc_verification/Installation/install_verilator.sh
 ```
 ## AES Design
-The design uses the open-source RTL implementation of AES by Joachim Strömbergson. AES stands for Advanced Encryption Standard.
-We begin by using the open-source RTLs for AES by [Joachim Strömbergson](https://github.com/secworks/aes). ***Advanced Encryption Standard.*** <br/> 
+AES stands for ***Advanced Encryption Standard.*** We begin by using the open-source RTLs for AES by [Joachim Strömbergson](https://github.com/secworks/aes).  <br/> 
+
+```bash
+git clone https://github.com/secworks/aes
+```
 
 In summary, AES mainly performs the following five steps:
-1) Convert the input text into a state matrix using ASCII code.
-2) XOR the state matrix with the key.
+- Convert the input text into a state matrix using ASCII code.
+- XOR the state matrix with the key.
 > [!NOTE]
    > The key can be 128 bits, or 256 bits in this design: <br/>
    > If key is 128 bits, steps 2 to 5 are repeated for 10 rounds. <br/>
-   > If key is 256 bits, steps 2 to 5 are repeated for 14 rounds.
- (SubBytes) <br/>
- (0x00–0xFF). 
-3) Substitution <br/>
+   > If key is 256 bits, steps 2 to 5 are repeated for 14 rounds. <br/>
+- Substitution <br/>
 Each element in the state matrix is a byte represented in hexadecimal (0x00 - 0xFF). It is replaced with the corresponding value from the S-box (substitution box). <br/>
 Example: (0x01 is replaced by 0x7C)
-![subbyte matrix](https://captanu.wordpress.com/wp-content/uploads/2015/04/aes_sbox.jpg).
-4) Shift Rows <br/>
+<p align="center">
+  <img src="https://captanu.wordpress.com/wp-content/uploads/2015/04/aes_sbox.jpg" width="550">
+</p>
+
+- Shift Rows <br/>
 Each row is shifted (left circular shift) by its row index.
-5) Mix Columns
+- Mix Columns <br/>
 The resulting state matrix is multiplied by a fixed matrix called the Mix Columns matrix. <br/>
 For more details [Click Here](https://csrc.nist.gov/files/pubs/fips/197/final/docs/fips-197.pdf).
 
-### Some Specfications about the design
-These are the inputs and the outputs.
+### Some Specifications about the Design
+These are the inputs and outputs of the AES module.
 ```ruby
    module aes(
            // Clock and reset.
@@ -74,16 +78,16 @@ These are the inputs and the outputs.
            output wire [31 : 0] read_data
           );  
 ```
-As you see there is only input for the text and the key with just 32 bits, Therfore either the text or the key is controled by the address as folowing:
+As shown above, the design has only 32-bit data access for both the plaintext and the key. Therefore, the text and key are controlled through the address mapping as follows:
 
    |   Address    | Purpose    |
    | ------------ | -------    |
-   | From 0x10 to 0x17 | Writing the key into the design either 128 bits or 256 bits. |
-   | From 0x20 to 0x23 | Writing the text in ASKII formate. |
-   |     0x0A     | Choosing the operation (encription or decription) and also determine the length of the key. |
-   |     0x08     | Assert the first bit to load the key, then assert the second bit to load the test. |
-   |     0x09     | Knowing the state of the AES (if the result done or not). |
-   | From 0x30 to 0x33 | Reading the output. |
+   | 0x10 to 0x17 | Writing the key into the design (128-bit or 256-bit key). |
+   | 0x20 to 0x23 | Writing the plaintext in ASCII format. |
+   |     0x0A     | Selects the operation mode (encryption or decryption) and defines the key length. |
+   |     0x08     | Control register: the first bit loads the key, and the second bit loads the text. |
+   |     0x09     | Status register indicating the AES state (operation done or in progress). |
+   | 0x30 to 0x33 | Reading the encrypted/decrypted output. |
 
 ## Why using cocotb + pyuvm?
 cocotb is a Python-based verification framework used to test digital RTL designs. Instead of writing testbenches in SystemVerilog
@@ -94,32 +98,38 @@ Using them together gives you the best of both:
 - PyUVM as a verification architecture layer which provides reusable UVM-style components
 ## UVM Environment 
 A UVM environment is a modular verification structure used to verify RTL designs in a scalable and reusable way. It organizes the testbench into components that generate stimulus, drive the DUT, monitor behavior, and check correctness. <br/>
-### 1. uvm_test
-It is the top-level component that configures the environment and starts the verification scenario, acting as the entry point of the simulation.
-### 2. uvm_env 
-It is the container that builds and connects all verification components like agents, scoreboards, and coverage blocks. 
-### 3. uvm_agent
-It groups together the driver, sequencer, and monitor to handle one communication path.
-### 4. uvm_driver
-It drives the inputs to the DUT. 
-### 5. uvm_monitor 
-It passively observes DUT signals and converts them back into transactions, then send the transaction to the scoreboard and the coverage classes. 
-### 6. uvm_sequencer 
-controls the flow of transactions by supplying them to the driver in an organized manner.
-### 7. uvm_transaction 
-It is a data object that carries stimulus and response information between components.
-### 8. uvm_sequence 
-It defines the actual test scenarios by generating transactions, whether directed or random, to stimulate different design behaviors. 
-### 9. uvm_scoreboard 
-It checks correctness by comparing the DUT output with a reference or golden model and reporting mismatches. 
-### 10. uvm_coverage 
-It measures how much of the design functionality has been exercised to ensure thorough testing. 
-![UVM Environment](https://asicwhale.github.io/2018/07/09/201807-2018-07-09-uvm-env/uvm_example.png)
-## Simulation Setup
-### Achynchronous Reset
-In AES design, the Reset signal is active low asyncronous reset, which means we can't depend on the clock. Therfore we will use Timer (Function in python to advance the simulation time). First asserting the reset and wait for a specfic time, then deassert the reset and wait for reset signal to propagate through DUT logic.
+<p align="center">
+  <img src="https://asicwhale.github.io/2018/07/09/201807-2018-07-09-uvm-env/uvm_example.png" width="550">
+</p>
 
-```ruby
+### uvm_test
+It is the top-level component that configures the environment and starts the verification scenario, acting as the entry point of the simulation.
+### uvm_env 
+It is the container that builds and connects all verification components like agents, scoreboards, and coverage blocks. 
+### uvm_agent
+It groups together the driver, sequencer, and monitor to handle one communication path.
+### uvm_driver
+It drives the inputs to the DUT. 
+### uvm_monitor 
+It passively observes DUT signals and converts them back into transactions, then send the transaction to the scoreboard and the coverage classes. 
+### uvm_sequencer 
+controls the flow of transactions by supplying them to the driver in an organized manner.
+### uvm_transaction 
+It is a data object that carries stimulus and response information between components.
+### uvm_sequence 
+It defines the actual test scenarios by generating transactions, whether directed or random, to stimulate different design behaviors. 
+### uvm_scoreboard 
+It checks correctness by comparing the DUT output with a reference or golden model and reporting mismatches. 
+### uvm_coverage 
+It measures how much of the design functionality has been exercised to ensure thorough testing. 
+
+## Simulation Setup
+### Asynchronous Reset
+In the AES design, the reset signal is an active-low asynchronous reset, which means it does not depend on the clock signal. Therefore, we use a Timer (a cocotb function) to advance the simulation time. First, we assert the reset and wait for a specific duration. Then, we deassert the reset and allow some additional time for the reset signal to propagate through the DUT logic.
+<details>
+<summary> sync_reset.py </summary>
+  
+```python
 
 async def async_reset(dut, duration_ns=100, propagation_delay_ns=10):
     print("Asserting async reset...")
@@ -133,18 +143,24 @@ async def async_reset(dut, duration_ns=100, propagation_delay_ns=10):
     await Timer(propagation_delay_ns, units="ns")
     print("Reset complete")
 ```
+</details> 
 
 ### Generating Clock Signal
-To generate a clock in cocotb. Use Clock function in clock library, then use start_soon() to make it run parallel with the test (run in the background).
-```ruby
+To generate a clock in cocotb, we use the Clock class from the cocotb clock library. Then, start_soon() is used to run it in parallel with the test (i.e., in the background).
+
+  
+```python
 # generating the clock
     clk_period = 2
     clock = Clock(dut.clk, clk_period, unit="ns")
     cocotb.start_soon(clock.start())
 ```
+
+
 ### @cocotb.test
-It is a decorator in cocotb. Here the clock is generate and run_test() function is called to start the uvm.
-```ruby
+`@cocotb.test` is a decorator in cocotb used to define a test coroutine. In this test, the clock is generated and the run_test() function is called to start the UVM testbench.
+
+```python
 # Cocotb test function to run the pyuvm test
 @cocotb.test()
 async def test_AES(dut):
@@ -164,13 +180,17 @@ async def test_AES(dut):
     await uvm_root().run_test("AES_Test")
 ```
 ### Configration Data Base
-The interface is sent throught it. In UVM, the top module is the only module that sees the interface, so the interface can be shared to the driver and the monitor to drive or observe the signals. But in cocotb and pyuvm, The interface ca be accessed by using **cocotb.top.<signal_name>**. However in the tutorial, configDB is used to simulate the SystemVerilog environment. In addtition, To limit the classed that can access the interface as in UVM.
-```ruby
+The interface is passed through the configuration database. In UVM, the top module is the only module that has visibility of the interface, which is then shared with the driver and monitor to drive or observe signals.
+
+In cocotb and pyuvm, the DUT can be accessed directly using `cocotb.top.<signal_name>`. However, in this tutorial, the configuration database is used to emulate the SystemVerilog UVM environment. In addition, it restricts which classes can access the interface, similar to UVM’s configuration mechanisms.
+
+```python
 # Sending the interface
 self.dut = cocotb.top
 ConfigDB().set(None, "*", "dut", self.dut)
 ```
 ```ruby
+#Getting the interface
 try:
    self.vif = ConfigDB().get(self, "", "dut")
    self.logger.info("Got the interface successfully")
@@ -178,8 +198,9 @@ except Exception:
    self.logger.error("Can't get the interface from ConfigDB")
 ```
 ### Golden Model
-It is important to compare the design with it. In library Crypto in python, there is an AES that can be used as a golden model. It takes the key and the text in ASKII format then return the result. After getting the result separate into four words because the output read_data is only 32 bits.
-```ruby
+The golden model is used to verify the correctness of the design by comparing its output with a reference implementation. In this project, the Python `Crypto` library is used as the golden model for AES. It takes the key and plaintext in ASCII format and returns the ciphertext. Since the DUT output is 32-bit wide, the 128-bit ciphertext is split into four 32-bit words.
+
+```python
 def golden_model(self, key, plaintext):
         expected_result = []
         cipher = AES.new(key, AES.MODE_ECB)

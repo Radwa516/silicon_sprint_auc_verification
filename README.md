@@ -425,7 +425,7 @@ def write(self, txn):
 ** TESTS=1 PASS=1 FAIL=0 SKIP=0                273.00           0.06       4219.65  **
 **************************************************************************************      
 ```
-## Random Test
+# Random Test
 In this method, the inputs are randomized. In the AES design, both the key and the plaintext take random values, while the address is not randomized since it is a control signal. First, a function is created to randomize the key and plaintext based on a given range and an optional seed.
 
 <details>

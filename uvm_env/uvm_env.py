@@ -45,9 +45,6 @@ class AES_Driver(uvm_driver):
     """Driver for AES DUT."""
 
     def build_phase(self):
-        # pyuvm drivers already have seq_item_port by default
-        # No need to create it manually
-
         # Retrieve the interface and check if the process is successful
         self.vif = ConfigDB().get(self, "", "dut")
         if self.vif is not None:
@@ -215,8 +212,6 @@ class AES_Test(uvm_test):
         # Start sequence
         seq = AES_Sequence.create("seq")
         await seq.start(self.env.agent.seqr)
-        
-        await Timer(10, unit="ns")
         self.drop_objection()
     
     def check_phase(self):
@@ -233,13 +228,13 @@ async def async_reset(dut, duration_ns=100, propagation_delay_ns=10):
     print("Asserting async reset...")
     
     dut.reset_n.value = 0
-    await Timer(duration_ns, units="ns")
+    await Timer(duration_ns, unit="ns")
     
     print("Deasserting async reset...")
     dut.reset_n.value = 1
     # Wait for reset signal to propagate through DUT logic
     # This ensures all flip-flops have stabilized before continuing
-    await Timer(propagation_delay_ns, units="ns")
+    await Timer(propagation_delay_ns, unit="ns")
     print("Reset complete")
 
 # Cocotb test function to run the pyuvm test

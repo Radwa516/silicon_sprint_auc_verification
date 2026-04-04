@@ -1,3 +1,5 @@
+# AUC Silicon Sprint
+
 # Verification for AES design using Verilator, cocotb and pyuvm
 This project focuses on building a reusable UVM-inspired testbench with constrained-random testing, and automated checking.
 ## Installation:

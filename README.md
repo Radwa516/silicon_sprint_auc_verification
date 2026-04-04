@@ -126,8 +126,6 @@ It measures how much of the design functionality has been exercised to ensure th
 ## Simulation Setup
 ### Asynchronous Reset
 In the AES design, the reset signal is an active-low asynchronous reset, which means it does not depend on the clock signal. Therefore, we use a Timer (a cocotb function) to advance the simulation time. First, we assert the reset and wait for a specific duration. Then, we deassert the reset and allow some additional time for the reset signal to propagate through the DUT logic.
-<details>
-<summary> sync_reset.py </summary>
   
 ```python
 
@@ -143,7 +141,6 @@ async def async_reset(dut, duration_ns=100, propagation_delay_ns=10):
     await Timer(propagation_delay_ns, units="ns")
     print("Reset complete")
 ```
-</details> 
 
 ### Generating Clock Signal
 To generate a clock in cocotb, we use the Clock class from the cocotb clock library. Then, start_soon() is used to run it in parallel with the test (i.e., in the background).

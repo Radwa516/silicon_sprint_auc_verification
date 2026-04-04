@@ -189,7 +189,7 @@ In cocotb and pyuvm, the DUT can be accessed directly using `cocotb.top.<signal_
 self.dut = cocotb.top
 ConfigDB().set(None, "*", "dut", self.dut)
 ```
-```ruby
+```python
 #Getting the interface
 try:
    self.vif = ConfigDB().get(self, "", "dut")
@@ -216,9 +216,9 @@ def golden_model(self, key, plaintext):
         return expected_result
 ```
 ## Running the code
-You will find the code of the environment in: **uvm_env/uvm_env.py**
-This is an environment setup. Run it to make sure that the environment is running fine. 
-After running, you should see:
+You can find the environment code in: `uvm_env/uvm_env.py`
+This file contains the environment setup. Run it to ensure that the environment is working correctly.
+After running, you should see: 
 ```
 19.00ns INFO     cocotb.regression                  uvm_env.test_AES passed                                                                                             
 19.00ns INFO     cocotb.regression                  
@@ -231,10 +231,11 @@ After running, you should see:
 **************************************************************************************                                                                                                                                                                         
 ```
 ### 1) Driving the inputs
-After retrieve the interface from the configration data base, waiting for the transaction, then driving the input signal.
-The output of the AES be ready after about 55 clock cycle. After driving the key and the text, wait for the output to be ready 
-without driving any new test cases. 
-```ruby
+After retrieving the interface from the configuration database and receiving a transaction, the driver applies the input signals to the DUT. The **AES output** becomes ready after approximately ~55 clock cycles. Therefore, after driving the key and plaintext, the driver must wait for the output to be ready without sending new transactions during this period.
+<details>
+<summary> driver class </summary>
+  
+```python
 self.vif.cs.value = txn.cs
 self.vif.we.value = txn.we
 self.vif.address.value = txn.address
@@ -244,10 +245,15 @@ if (txn.address == 0x08) and (txn.we == 0) and (txn.cs == 0):
    for _ in range(55):
       await FallingEdge(self.vif.clk) 
 ```
+</details> 
+
 ### 2) Monitoring the output
-After retrieve the interface from the configration data base, observe the DUT signals and sent them to the scoreboard to check the output.
-In addition
-```ruby
+After retrieving the interface from the configuration database, the monitor observes the DUT signals and sends them to the scoreboard for result checking.
+
+<details>
+<summary> monitor class </summary>
+  
+```python
 txn.we = self.vif.we.value
 txn.address = self.vif.address.value
 txn.write_data = self.vif.write_data.value
@@ -256,21 +262,28 @@ self.ap.write(txn)
 self.logger.info(f"From Monitor --> txn: {txn}")
 await FallingEdge(self.vif.clk)
 ```
+</details> 
+
 ### 3) Sending the Transaction
-There are two methods to send the transaction:
+There are two methods to send transactions:
 - Directed Test
 - Random Test
 ### Directed Test
-Put the test senarios maiually as the following:
-- First Initialize the inputs
+In this approach, test scenarios are defined manually as follows:
+- Initialize the inputs
 - Send the key
-- Put the configration
+- Set the configuration
 - Wait
 - Send the text
-- Put the configration (encryption/decryption)
+- Set the configuration (encryption/decryption mode)
 - Wait
-- Recieve the **result**
-```ruby
+- Receive the **result**
+### Sequence:
+This class generates and sends a sequence of AES test transactions to the DUT. It defines a list of test vectors representing register writes/reads (key setup, mode selection, plaintext input, start signal, and result read). Each tuple contains: (cs, we, address, write_data) which simulates a bus transaction. Each vector is converted into a transaction object and sent to the driver using: `start_item() → finish_item()`
+<details>
+<summary> sequence class </summary>
+  
+```python
 class AES_Sequence(uvm_sequence):
     """Sequence generating AES_ test vectors."""
     
@@ -330,9 +343,15 @@ class AES_Sequence(uvm_sequence):
             await self.start_item(txn)
             await self.finish_item(txn)
 ```
-**scoreboard**
-It receives output when address = 0x30 - 0x33, and comparing it with the golden model
-```ruby
+</details> 
+
+## scoreboard
+The scoreboard receives the output when the address is in the range 0x30 to 0x33, and compares it with the golden model.
+<details>
+<summary> write function </summary>
+  
+```python
+
 def write(self, txn):
    """Receive transactions from monitor."""
    self.logger.info(f"Scoreboard received: {txn}")
@@ -358,8 +377,11 @@ def write(self, txn):
          word = 3
          self.check(word)
 ```
+</details> 
+
 > [!NOTE]
 > The whole code of sequence in path: Directed_Test/uvm_env_dt.py
+
 ## Running the directed test code
 ```ruby
 ====================================================================================================                                                                       
@@ -402,11 +424,13 @@ def write(self, txn):
 **************************************************************************************      
 ```
 ## Random Test
-In this method the inputs is randomized. In AES design, the key and the text will take random values. Address can't be randomized as it is a control signal.
-First build a function to random the key and the text based on a specifc size and a seed.
-```ruby
+In this method, the inputs are randomized. In the AES design, both the key and the plaintext take random values, while the address is not randomized since it is a control signal. First, a function is created to randomize the key and plaintext based on a given range and an optional seed.
+
+<details>
+<summary> transaction class </summary>
+  
+```python
 class AES_Transaction(uvm_sequence_item):
-    """Transaction for AES_ test."""
     
     def __init__(self, name="AES_Transaction"):
         super().__init__(name)
@@ -418,7 +442,6 @@ class AES_Transaction(uvm_sequence_item):
         self.text = 0
 
     def randomize_constrained(self, length_min=0, length_max=0xFF, seed=None):
-        """Randomize with constraints."""
         if seed is not None:
             random.seed(seed)
 
@@ -431,8 +454,14 @@ class AES_Transaction(uvm_sequence_item):
                 f"write_data={self.write_data}")
 
 ```
-Then the sequence is using those random values and sending it to the driver. For simplifity, sending_key function and sending_text are built. they receive the random 128 bits and separating them into four words, then send them:
-```ruby
+</details>
+
+Then, the sequence uses these random values and sends them to the driver. For simplicity, two helper functions are used: `sending_key` and `sending_text`. They split the 128-bit values into four 32-bit words and send them to the DUT.
+
+<details>
+<summary> sending_key function </summary>
+  
+```python
    async def sending_key (self, txn: AES_Transaction):
         key_words = [
             (txn.key >> 96) & 0xffffffff,
@@ -452,7 +481,13 @@ Then the sequence is using those random values and sending it to the driver. For
             #(1, 1, 0x11, 0x28aed2a6),
             #txn = AES_Transaction()
 ```
-```ruby
+
+</details>
+
+<details>
+<summary> sending_text function </summary>
+  
+```python
 
     async def sending_text (self, txn: AES_Transaction):
         text_words = [
@@ -471,9 +506,13 @@ Then the sequence is using those random values and sending it to the driver. For
             await self.start_item(txn)
             await self.finish_item(txn)
 ```
+
+</details>
+
 > [!NOTE]
 > The whole code of sequence in path: Random_Test/uvm_env_rt.py <br/>
-**scoreboard** <br/>
+
+## scoreboard 
 It will be slightly complex because it recieves inputs to send them to the golden model, then waiting for the result and comparing the actual result with the one from the golden model.<br/>
 
 

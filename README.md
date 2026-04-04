@@ -2,7 +2,7 @@
   <img src="https://github.com/Radwa516/silicon_sprint_auc_verification/blob/main/silicon_sprint_logo/ASIC-Hub.png" width="150">
 </p>
 
-<h1 align="center">Silicon Sprint AUC Module (3) </h1>
+<h1 align="center">Silicon Sprint AUC Module (6) </h1>
 </p>
 
 # Verification for AES Design using Verilator, Cocotb, and PyUVM
@@ -34,23 +34,28 @@ bash ./silicon_sprint_auc_verification/Installation/install_pyuvm.sh
 bash ./silicon_sprint_auc_verification/Installation/install_verilator.sh
 ```
 ## AES Design
-We will use the open-source RTLs for AES by [Joachim Strömbergson](https://github.com/secworks/aes). AES stands for standard Encription Standard. <br/> 
-In summary AES do mainly five steps:
-1) convert the text into a state matrix using ASKII code.
-2) XORing for the state matrix with key.
+The design uses the open-source RTL implementation of AES by Joachim Strömbergson. AES stands for Advanced Encryption Standard.
+We begin by using the open-source RTLs for AES by [Joachim Strömbergson](https://github.com/secworks/aes). ***Advanced Encryption Standard.*** <br/> 
+
+In summary, AES mainly performs the following five steps:
+1) Convert the input text into a state matrix using ASCII code.
+2) XOR the state matrix with the key.
 > [!NOTE]
-   > The key can be 128 bits, or 256 bits in our design <br/>
-   > If key = 128 bits, then the steps from 2 to 5 will be repeated 10 rounds
-   > If key = 256 bits, then the steps from 2 to 5 will be repeated 14 rounds
-3) Substitutive <br/>
-Each element in The state matrix is a byte which is written in hexa decimal (0x00 - 0xFF). We replace it with the corresponding number from the subbyte matrix. <br/>
-example (0x01 replaced by 7C)
+   > The key can be 128 bits, or 256 bits in this design: <br/>
+   > If key is 128 bits, steps 2 to 5 are repeated for 10 rounds. <br/>
+   > If key is 256 bits, steps 2 to 5 are repeated for 14 rounds.
+ (SubBytes) <br/>
+ (0x00–0xFF). 
+3) Substitution <br/>
+Each element in the state matrix is a byte represented in hexadecimal (0x00 - 0xFF). It is replaced with the corresponding value from the S-box (substitution box). <br/>
+Example: (0x01 is replaced by 0x7C)
 ![subbyte matrix](https://captanu.wordpress.com/wp-content/uploads/2015/04/aes_sbox.jpg).
 4) Shift Rows <br/>
-Each row is shifted (shift left rotate) by its index.
+Each row is shifted (left circular shift) by its row index.
 5) Mix Columns
-Multibly the result matrix with a fixed matrix called mix columns. <br/>
+The resulting state matrix is multiplied by a fixed matrix called the Mix Columns matrix. <br/>
 For more details [Click Here](https://csrc.nist.gov/files/pubs/fips/197/final/docs/fips-197.pdf).
+
 ### Some Specfications about the design
 These are the inputs and the outputs.
 ```ruby

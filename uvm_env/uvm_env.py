@@ -246,9 +246,7 @@ async def test_AES(dut):
     # generating the clock
     clock = Clock(dut.clk, clk_period, unit="ns")
     cocotb.start_soon(clock.start())
-    # await init_inputs(dut)
-    await async_reset(dut, 3*clk_period, clk_period)
-    # await FallingEdge(dut.clk)
+    await async_reset(dut, 5, 3)
 
     # Register the test class with uvm_root so run_test can find it
     if not hasattr(uvm_root(), 'm_uvm_test_classes'):

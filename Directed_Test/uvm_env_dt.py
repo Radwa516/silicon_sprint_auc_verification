@@ -1,6 +1,5 @@
 """
-Module 3 Test Case 3.1: Simple UVM Test
-Complete UVM testbench for simple adder.
+Complete UVM testbench for AES design.
 """
 
 import cocotb
@@ -9,12 +8,6 @@ from cocotb.clock import Clock
 from cocotb.triggers import Timer, RisingEdge, FallingEdge
 from pyuvm import *
 from Crypto.Cipher import AES
-# In pyuvm, use uvm_seq_item_port vifead of uvm_seq_item_pull_port
-# uvm_seq_item_port is available from pyuvm import * and works the same way
-# Create an alias for compatibility with code that expects uvm_seq_item_pull_port
-
-# Use uvm_seq_item_port as it's the correct class in pyuvm
-uvm_seq_item_pull_port = uvm_seq_item_port
     
 class AES_Transaction(uvm_sequence_item):
     """Transaction for AES test."""
@@ -28,8 +21,7 @@ class AES_Transaction(uvm_sequence_item):
     
     def __str__(self):
         return (f"cs=0x{self.cs}, we=0x{self.we}, "
-                f"address={self.address}, "
-                f"write_data={self.write_data}")
+                f"address={self.address}, ")
 
 
 class AES_Sequence(uvm_sequence):
@@ -96,9 +88,6 @@ class AES_Driver(uvm_driver):
     """Driver for AES DUT."""
 
     def build_phase(self):
-        # pyuvm drivers already have seq_item_port by default
-        # No need to create it manually
-
         # Retrieve the interface and check if the process is successful
         try:
             self.vif = ConfigDB().get(self, "", "dut")
@@ -244,9 +233,9 @@ class AES_Coverage(uvm_subscriber):
             self.coverage_we[address_we] = 0
         self.coverage_we[address_we] += 1
 
-        #print("="*150)
-        #print(f"Coverage sampled for bin write enable: {address_we}, unique values: {len(self.coverage_we)}")
-        #print("="*150)
+        print("="*150)
+        print(f"Coverage sampled for bin write enable: {address_we}, unique values: {len(self.coverage_we)}")
+        print("="*150)
 
 class AES_Agent(uvm_agent):
     """Agent for AES_."""
@@ -336,7 +325,6 @@ async def test_AES(dut):
     clock = Clock(dut.clk, clk_period, unit="ns")
     cocotb.start_soon(clock.start())
     await async_reset(dut, 5, 3)
-    # await FallingEdge(dut.clk)
 
     # Register the test class with uvm_root so run_test can find it
     if not hasattr(uvm_root(), 'm_uvm_test_classes'):

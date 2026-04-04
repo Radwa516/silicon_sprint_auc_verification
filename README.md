@@ -29,8 +29,8 @@ pip install pycryptodome
 4. **Install the tools**: <br/>
 Run the scripts inside the Installation folder:
 ```bash
-bash ./silicon_sprint_auc_verification/Installation/install_cocotb.sh
-bash ./silicon_sprint_auc_verification/Installation/install_pyuvm.sh
+bash ./silicon_sprint_auc_verification/Installation/install_cocotb.sh --pip --venv .venv                                         
+bash ./silicon_sprint_auc_verification/Installation/install_pyuvm.sh --pip --venv .venv
 bash ./silicon_sprint_auc_verification/Installation/install_verilator.sh
 ```
 ## AES Design
@@ -212,8 +212,17 @@ def golden_model(self, key, plaintext):
         expected_result = [w0, w1, w2, w3]
         return expected_result
 ```
-## Running the code
+
+# Running the code
 You can find the environment code in: `uvm_env/uvm_env.py`
+```ruby
+cd silicon_sprint_auc_verification/uvm_env/                 
+```
+
+```ruby
+make SIM=verilator TEST=uvm_env                
+```
+
 This file contains the environment setup. Run it to ensure that the environment is working correctly.
 After running, you should see: 
 ```
@@ -233,7 +242,6 @@ After retrieving the interface from the configuration database and receiving a t
 <summary> driver class </summary>
   
 ```python
-self.vif.cs.value = txn.cs
 self.vif.we.value = txn.we
 self.vif.address.value = txn.address
 self.vif.write_data.value = txn.write_data

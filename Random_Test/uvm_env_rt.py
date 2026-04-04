@@ -1,6 +1,5 @@
 """
-Module 3 Test Case 3.1: Simple UVM Test
-Complete UVM testbench for simple adder.
+Complete UVM testbench for AES design.
 """
 
 import cocotb
@@ -9,12 +8,6 @@ from cocotb.clock import Clock
 from cocotb.triggers import Timer, RisingEdge, FallingEdge
 from pyuvm import *
 from Crypto.Cipher import AES
-# In pyuvm, use uvm_seq_item_port vifead of uvm_seq_item_pull_port
-# uvm_seq_item_port is available from pyuvm import * and works the same way
-# Create an alias for compatibility with code that expects uvm_seq_item_pull_port
-
-# Use uvm_seq_item_port as it's the correct class in pyuvm
-uvm_seq_item_pull_port = uvm_seq_item_port
     
 class AES_Transaction(uvm_sequence_item):
     """Transaction for AES_ test."""
@@ -62,8 +55,6 @@ class AES_Sequence(uvm_sequence):
             await self.sending_key(txn)
 
             # Set config FIRST (encrypt, 128-bit)
-            #(1, 1, 0x0A, 0x00000000),
-            #txn = AES_Transaction()
             txn.cs = 1
             txn.we = 1
             txn.address = 0x0A
@@ -72,8 +63,6 @@ class AES_Sequence(uvm_sequence):
             await self.finish_item(txn)
 
             # INIT (build key schedule)
-            #(1, 1, 0x08, 0x00000001),
-            #txn = AES_Transaction()
             txn.cs = 1
             txn.we = 1
             txn.address = 0x08
@@ -81,8 +70,6 @@ class AES_Sequence(uvm_sequence):
             await self.start_item(txn)
             await self.finish_item(txn)
 
-            #(0, 0, 0x08, 0x00000001),
-            #txn = AES_Transaction()
             txn.cs = 0
             txn.we = 0
             txn.address = 0x08
@@ -94,8 +81,6 @@ class AES_Sequence(uvm_sequence):
             await self.sending_text(txn)
 
             # Set config FIRST (encrypt, 128-bit)
-            #(1, 1, 0x0A, 0x00000001),
-            #txn = AES_Transaction()
             txn.cs = 1
             txn.we = 1
             txn.address = 0x0A
@@ -104,17 +89,13 @@ class AES_Sequence(uvm_sequence):
             await self.finish_item(txn)
 
             # START encryption
-            #(1, 1, 0x08, 0x00000002),
-            #txn = AES_Transaction()
             txn.cs = 1
             txn.we = 1
             txn.address = 0x08
             txn.write_data = 0x00000002
             await self.start_item(txn)
             await self.finish_item(txn)
-            #(0, 0, 0x08, 0x00000002),
 
-           #txn = AES_Transaction()
             txn.cs = 0
             txn.we = 0
             txn.address = 0x08
@@ -123,9 +104,7 @@ class AES_Sequence(uvm_sequence):
             await self.finish_item(txn)
 
             # Read result
-            #(1, 0, 0x30, 0x00000002),
             for i in range(4):
-                #txn = AES_Transaction()
                 txn.cs = 1
                 txn.we = 0
                 txn.address = 0x30 + i
@@ -149,8 +128,6 @@ class AES_Sequence(uvm_sequence):
             txn.write_data = key_words[i]
             await self.start_item(txn)
             await self.finish_item(txn)
-            #(1, 1, 0x11, 0x28aed2a6),
-            #txn = AES_Transaction()
         
 
     async def sending_text (self, txn: AES_Transaction):
@@ -162,7 +139,6 @@ class AES_Sequence(uvm_sequence):
         ]
 
         for i in range(len(text_words)):
-            #txn = AES_Transaction()
             txn.cs = 1
             txn.we = 1
             txn.address = 0x20 + i
@@ -345,16 +321,10 @@ class AES_Coverage(uvm_subscriber):
         self.coverage_we = {}
         self.coverage_address = {}
     
-    def build_phase(self):
-        """Build phase - uvm_subscriber already provides analysis export."""
-        # uvm_subscriber automatically creates analysis_export, no need to create manually
-        pass
-    
     def write(self, txn):
         """Sample coverage."""
         address_cvg = int(txn.address)
         address_we = int(txn.we)
-        #b_cvg = int(txn.write_data)
         if address_cvg not in self.coverage_address:
             self.coverage_address[address_cvg] = 0
         self.coverage_address[address_cvg] += 1
@@ -382,8 +352,8 @@ class AES_Coverage(uvm_subscriber):
         self.logger.info(f"Write Enable Coverage: {total_we} unique values")
         
         #Coverage percentage (simplified)
-        address_possible_values = 2**8  # 8-bit data
-        we_possible_values = 2  # 8-bit command
+        address_possible_values = 2**8  
+        we_possible_values = 2  
         addr_percent = (total_addr / address_possible_values) * 100
         we_percent = (total_we / we_possible_values) * 100
         
@@ -485,9 +455,7 @@ async def test_AES(dut):
     # generating the clock
     clock = Clock(dut.clk, clk_period, unit="ns")
     cocotb.start_soon(clock.start())
-    #await init_inputs(dut)
     await async_reset(dut, 5, 3)
-    # await FallingEdge(dut.clk)
 
     # Register the test class with uvm_root so run_test can find it
     if not hasattr(uvm_root(), 'm_uvm_test_classes'):

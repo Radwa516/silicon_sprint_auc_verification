@@ -2,7 +2,7 @@
   <img src="https://github.com/Radwa516/silicon_sprint_auc_verification/blob/main/silicon_sprint_logo/ASIC-Hub.png" width="200">
 </p>
 
-<h1 align="center">Silicon Sprint AUC Module (6) </h1>
+<h1 align="center">Silicon Sprint AUC</h1>
 </p>
 
 # Verification for AES Design using Verilator, Cocotb, and PyUVM
@@ -785,6 +785,7 @@ class AES_Coverage(uvm_subscriber):
 ** TESTS=1 PASS=1 FAIL=0 SKIP=0              13307.00           6.26       2124.38  **
 **************************************************************************************
 ```
+#For more details about how to use cocotb, pyUVM and Verilator by using a lot of examples: [Click me](https://github.com/universal-verification-methodology/learn_uvm_pyuvm)
 
 
 

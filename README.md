@@ -188,11 +188,11 @@ ConfigDB().set(None, "*", "dut", self.dut)
 ```
 ```python
 #Getting the interface
-try:
-   self.vif = ConfigDB().get(self, "", "dut")
-   self.logger.info("Got the interface successfully")
-except Exception:
-   self.logger.error("Can't get the interface from ConfigDB")
+self.vif = ConfigDB().get(self, "", "dut")
+if self.vif is None:
+  self.logger.error("Can't get the interface from ConfigDB")
+else:
+  self.logger.info("Got the interface successfully")
 ```
 ### Golden Model
 The golden model is used to verify the correctness of the design by comparing its output with a reference implementation. In this project, the Python `Crypto` library is used as the golden model for AES. It takes the key and plaintext in ASCII format and returns the ciphertext. Since the DUT output is 32-bit wide, the 128-bit ciphertext is split into four 32-bit words.

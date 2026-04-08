@@ -41,7 +41,7 @@ git clone https://github.com/secworks/aes
 ```
 
 In summary, AES mainly performs the following five steps:
-- Convert the input text into a state matrix using ASCII code.
+- If data is text: Convert the input text into a state matrix using ASCII code.
 - XOR the state matrix with the key.
 > [!NOTE]
    > The key can be 128 bits, or 256 bits in this design: <br/>
@@ -168,11 +168,6 @@ async def test_AES(dut):
     await async_reset(dut, 5, 3)
     # await FallingEdge(dut.clk)
 
-    # Register the test class with uvm_root so run_test can find it
-    if not hasattr(uvm_root(), 'm_uvm_test_classes'):
-        uvm_root().m_uvm_test_classes = {}
-    uvm_root().m_uvm_test_classes["AES_Test"] = AES_Test
-
     # Use uvm_root to run the test properly (executes all phases in hierarchy)
     await uvm_root().run_test("AES_Test")
 ```
@@ -184,7 +179,7 @@ In cocotb and pyuvm, the DUT can be accessed directly using `cocotb.top.<signal_
 ```python
 # Sending the interface
 self.dut = cocotb.top
-ConfigDB().set(None, "*", "dut", self.dut)
+ConfigDB().set(self, "*", "dut", self.dut)
 ```
 ```python
 #Getting the interface
@@ -273,11 +268,10 @@ There are two methods to send transactions:
 ### Directed Test
 In this approach, test scenarios are defined manually as follows:
 - Initialize the inputs
-- Send the key
 - Set the configuration
+- Send the key
 - Wait
 - Send the text
-- Set the configuration (encryption/decryption mode)
 - Wait
 - Receive the **result**
 ### Sequence:
@@ -295,6 +289,8 @@ class AES_Sequence(uvm_sequence):
         test_vectors = [
             # Initialize the inputs
             (0, 0, 0x00, 0x00000000),
+            # Determine the length of the key (128-bit)
+            (1, 1, 0x0A, 0x00000001),
             # Write key
             (1, 1, 0x10, 0x2b7e1516),
             (1, 1, 0x11, 0x28aed2a6),
@@ -304,9 +300,6 @@ class AES_Sequence(uvm_sequence):
             (1, 1, 0x15, 0x00000000),
             (1, 1, 0x16, 0x00000000),
             (1, 1, 0x17, 0x00000000),
-
-            # Determine the length of the key (128-bit)
-            (1, 1, 0x0A, 0x00000000),
 
             # Load the key (build key schedule)
             (1, 1, 0x08, 0x00000001),
@@ -319,9 +312,6 @@ class AES_Sequence(uvm_sequence):
             (1, 1, 0x21, 0x2e409f96),
             (1, 1, 0x22, 0xe93d7e11),
             (1, 1, 0x23, 0x7393172a),
-
-            # Set the operation (encryption)
-            (1, 1, 0x0A, 0x00000001),
 
             # START encryption
             (1, 1, 0x08, 0x00000002),
@@ -338,11 +328,11 @@ class AES_Sequence(uvm_sequence):
         
         for cs, we, address, write_data in test_vectors:
             txn = AES_Transaction()
+            await self.start_item(txn)
             txn.cs = cs
             txn.we = we
             txn.address = address
             txn.write_data = write_data
-            await self.start_item(txn)
             await self.finish_item(txn)
 ```
 </details> 
@@ -440,6 +430,7 @@ class AES_Transaction(uvm_sequence_item):
         self.we = 0
         self.address = 0
         self.write_data = 0
+        self.read_data = 0
         self.key = 0
         self.text = 0
 
@@ -523,72 +514,65 @@ class AES_Sequence(uvm_sequence):
 
         for _ in range(50):
             txn = AES_Transaction()
+            await self.start_item(txn)
             txn.cs = 0
             txn.we = 0
             txn.address = 0x00
             txn.write_data = 0x00000000
-            await self.start_item(txn)
             await self.finish_item(txn)
+
+            # Set config FIRST (encrypt, 128-bit)
+            await self.start_item(txn)
+            txn.cs = 1
+            txn.we = 1
+            txn.address = 0x0A
+            txn.write_data = 0x00000001
+            await self.finish_item(txn)
+
             # Write key
             seed = random.getrandbits(32)
             txn.randomize_constrained(0, 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF, seed)
             await self.sending_key(txn)
 
-            # Set config FIRST (encrypt, 128-bit)
-            txn.cs = 1
-            txn.we = 1
-            txn.address = 0x0A
-            txn.write_data = 0x00000000
-            await self.start_item(txn)
-            await self.finish_item(txn)
-
             # INIT (build key schedule)
+            await self.start_item(txn)
             txn.cs = 1
             txn.we = 1
             txn.address = 0x08
             txn.write_data = 0x00000001
-            await self.start_item(txn)
             await self.finish_item(txn)
 
+            await self.start_item(txn)
             txn.cs = 0
             txn.we = 0
             txn.address = 0x08
             txn.write_data = 0x00000001
-            await self.start_item(txn)
             await self.finish_item(txn)
 
             # Write plaintext
             await self.sending_text(txn)
 
-            # Set config FIRST (encrypt, 128-bit)
-            txn.cs = 1
-            txn.we = 1
-            txn.address = 0x0A
-            txn.write_data = 0x00000001
-            await self.start_item(txn)
-            await self.finish_item(txn)
-
             # START encryption
+            await self.start_item(txn)
             txn.cs = 1
             txn.we = 1
             txn.address = 0x08
             txn.write_data = 0x00000002
-            await self.start_item(txn)
             await self.finish_item(txn)
 
+            await self.start_item(txn)
             txn.cs = 0
             txn.we = 0
             txn.address = 0x08
             txn.write_data = 0x00000002
-            await self.start_item(txn)
             await self.finish_item(txn)
 
             # Read result
             for i in range(4):
+                await self.start_item(txn)
                 txn.cs = 1
                 txn.we = 0
                 txn.address = 0x30 + i
-                await self.start_item(txn)
                 await self.finish_item(txn)
 
     async def sending_key (self, txn: AES_Transaction):
